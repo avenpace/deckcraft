@@ -188,6 +188,13 @@ fn services(inbox: Inbox, ctx: egui::Context) -> Services {
         open_async: Some(Box::new(move |purpose: &str, request: u64| {
             let inbox = open_inbox.clone();
             let ctx = ctx.clone();
+            // Clawku: opening a presentation goes through the host page's storage browser; this
+            // request ends here (the host's file arrives as a new open)
+            if purpose == "open" && crate::clawku_pick::host_pick("deckcraft", "document") {
+                push_inbox(&inbox, InboxEvent::Cancelled { id: request });
+                ctx.request_repaint();
+                return;
+            }
             let dialog = match purpose {
                 "picture" => rfd::AsyncFileDialog::new().add_filter("Pictures", PICTURE_EXTS),
                 "audio" => rfd::AsyncFileDialog::new().add_filter("Audio", AUDIO_EXTS),

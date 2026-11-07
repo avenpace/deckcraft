@@ -22,6 +22,8 @@
 #![forbid(unsafe_code)]
 
 #[cfg(target_arch = "wasm32")]
+mod clawku_pick;
+#[cfg(target_arch = "wasm32")]
 mod host;
 #[cfg(target_arch = "wasm32")]
 mod presenter;

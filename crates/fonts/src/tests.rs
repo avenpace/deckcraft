@@ -23,7 +23,7 @@ fn emoji_clusters_are_recognised() {
 fn colour_fonts_are_recognised() {
     let db = FontDb::with_font_dirs(Vec::new());
     assert!(db.add_font(include_bytes!("../../render/tests/fixtures/colr-squares.ttf").to_vec()) > 0);
-    assert!(db.face("DeckCraft Colr Squares", "Regular").is_color());
+    assert!(db.face("ClawDeck Colr Squares", "Regular").is_color());
     assert!(!fontdb::last_resort_face().is_color());
 }
 

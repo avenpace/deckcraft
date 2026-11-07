@@ -43,7 +43,7 @@ fn new_slide(p: &mut Presentation, title: &str) -> Slide {
 pub fn rich_deck() -> Presentation {
     let mut p = defaults::new_presentation(None);
     p.props.title = "Rich deck".into();
-    p.props.author = "DeckCraft tests".into();
+    p.props.author = "ClawDeck tests".into();
     p.props.created = "2025-01-02T03:04:05Z".into();
     let img = p.add_media("image1.png", "image/png", png(40, 30, [200, 40, 40])).expect("media");
     let img2 = p.add_media("image2.png", "image/png", png(8, 8, [20, 140, 220])).expect("media");
@@ -417,7 +417,7 @@ fn deck_level_round_trip() {
     assert_eq!(q.slide_size, p.slide_size);
     assert_eq!(q.first_slide_number, 0);
     assert_eq!(q.props.title, "Rich deck");
-    assert_eq!(q.props.author, "DeckCraft tests");
+    assert_eq!(q.props.author, "ClawDeck tests");
     assert_eq!(q.props.created, "2025-01-02T03:04:05Z");
     assert_eq!(
         q.sections.iter().map(|s| (s.name.clone(), s.slides.len())).collect::<Vec<_>>(),

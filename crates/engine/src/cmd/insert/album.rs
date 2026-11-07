@@ -634,7 +634,7 @@ fn album_seed(s: &Session) -> Result<Value> {
     let st = s.doc()?;
     let slides: Vec<&deckcraft_model::Slide> =
         ids.iter().filter_map(|sid| u32::try_from(*sid).ok()).filter_map(|n| st.doc.slide(deckcraft_model::SlideId(n))).collect();
-    let theme_now = st.doc.masters.first().map(|m| m.theme.name.clone()).filter(|n| !n.is_empty()).unwrap_or_else(|| "DeckCraft".into());
+    let theme_now = st.doc.masters.first().map(|m| m.theme.name.clone()).filter(|n| !n.is_empty()).unwrap_or_else(|| "ClawDeck".into());
     let inferred = infer_album(&slides, &theme_now);
     let mark = slides.first().and_then(|sl| sl.raw_ext.as_deref().and_then(parse_album_mark));
     let (layout, frame, captions, grayscale, theme) = if let Some(mark) = mark {

@@ -233,7 +233,7 @@ pub fn table_styles_xml(used: &[String], defs: &[deckcraft_model::table::TableSt
         if !define {
             continue;
         }
-        let name = names.iter().find(|(id, _)| id == s).map(|(_, n)| format!("DeckCraft {n}")).unwrap_or_else(|| s.clone());
+        let name = names.iter().find(|(id, _)| id == s).map(|(_, n)| format!("ClawDeck {n}")).unwrap_or_else(|| s.clone());
         style_def(&mut w, s, &name);
     }
     // Styles the file defined but no table uses still belong to the deck.

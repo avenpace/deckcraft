@@ -1165,7 +1165,7 @@ fn colour_glyphs_paint_their_layers() {
     let mut t = TextBody::from_text("\u{E000} \u{E001}");
     let props = &mut t.paragraphs[0].runs[0].props;
     props.size = Some(72.0);
-    props.font = Some("DeckCraft Colr Squares".into());
+    props.font = Some("ClawDeck Colr Squares".into());
     props.fill = Some(deckcraft_model::style::Fill::solid(ColorRef::rgb(deckcraft_color::Rgba::rgb(0, 160, 0))));
     sh.text = Some(t);
     let p = deck_with(vec![sh]);

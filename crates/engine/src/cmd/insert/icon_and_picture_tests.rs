@@ -224,7 +224,7 @@ fn picture_options_and_theme_are_one_step() {
     assert!(mark.contains("theme=Harbor"), "{mark}");
     assert_eq!(s.active().unwrap().doc.slides[1].name, "Photo Album");
     s.execute("edit.undo", &json!({})).unwrap();
-    assert_eq!(theme_name(&s), "DeckCraft");
+    assert_eq!(theme_name(&s), "ClawDeck");
     assert_eq!(n_slides(&s), 1);
 }
 
@@ -243,7 +243,7 @@ fn unknown_theme_and_a_plain_slide_change_nothing() {
     assert!(s.execute("insert.photoAlbumEdit", &json!({"pictures": [pic("b.png")], "layout": "2"})).is_err());
     assert_eq!(n_slides(&s), before + 1);
     assert_eq!(pictures(&s, 1).len(), 1);
-    assert_eq!(theme_name(&s), "DeckCraft");
+    assert_eq!(theme_name(&s), "ClawDeck");
 }
 
 #[test]

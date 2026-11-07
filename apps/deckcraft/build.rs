@@ -14,10 +14,10 @@ fn main() {
     }
     let mut res = winresource::WindowsResource::new();
     res.set_icon("../../assets/app-icon/deckcraft.ico")
-        .set("ProductName", "DeckCraft")
-        .set("FileDescription", "DeckCraft presentations")
+        .set("ProductName", "ClawDeck")
+        .set("FileDescription", "ClawDeck presentations")
         .set("CompanyName", "Learning Machines LLC")
-        .set("LegalCopyright", "Copyright (c) the DeckCraft authors. MIT OR Apache-2.0.")
+        .set("LegalCopyright", "Copyright (c) the ClawDeck authors. MIT OR Apache-2.0.")
         .set("OriginalFilename", "deckcraft.exe")
         .set("InternalName", "deckcraft");
     if let Err(e) = res.compile() {

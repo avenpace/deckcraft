@@ -383,10 +383,10 @@ fn title_bar_export_opens_the_export_dialog() {
 /// PowerPoint does, instead of a text box with the link. Without a picture the link pastes as text.
 #[test]
 fn ctrl_v_pastes_the_picture_a_browser_copied_not_its_link() {
-    let url = "https://github.com/storytold/deckcraft/raw/main/assets/app-icon/hicolor/256x256/apps/ai.storyteller.deckcraft.png";
+    let url = "https://github.com/avenpace/deckcraft/raw/main/assets/app-icon/hicolor/256x256/apps/ai.storyteller.deckcraft.png";
     let caption = format!("{url}\nDeckCraft icon: a presentation screen with a bar chart on an orange tile");
     for (text, html, with_picture, pictures_after) in [
-        (caption.clone(), Some(format!("<img src=\"{url}\" alt=\"DeckCraft icon\">")), true, 1),
+        (caption.clone(), Some(format!("<img src=\"{url}\" alt=\"ClawDeck icon\">")), true, 1),
         (url.to_string(), None, true, 1),
         // Firefox's text/x-moz-url is UTF-16; read as UTF-8 it carries NULs.
         (url.chars().flat_map(|c| [c, '\0']).collect(), None, true, 1),

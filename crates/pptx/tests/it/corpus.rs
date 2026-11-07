@@ -43,7 +43,7 @@ fn talk() -> Presentation {
     let mut p = defaults::new_presentation(None);
     p.props.title = "Quarterly review".into();
     p.props.subject = "Owned corpus".into();
-    p.props.author = "DeckCraft tests".into();
+    p.props.author = "ClawDeck tests".into();
     let img = p.add_media("mark.png", "image/png", png(4, 4, [20, 90, 160])).expect("media");
 
     {
@@ -362,7 +362,7 @@ fn owned_corpus_round_trip_keeps_parts_and_text() {
         "Amount due",
         "Ada checks the axis",
         "Owned corpus",
-        "DeckCraft tests",
+        "ClawDeck tests",
         "https://example.org/north?q=1&x=2",
         "Open the report",
     ] {

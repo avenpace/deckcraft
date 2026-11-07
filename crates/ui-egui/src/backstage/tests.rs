@@ -193,7 +193,7 @@ fn new_tiles_keep_the_right_margin_in_a_narrow_window() {
     );
     h.state_mut().run("app.backstage", json!({"page": "new"})).unwrap();
     h.run_steps(3);
-    let tiles = ["DeckCraft", "Harbor", "Ember", "Meadow", "Nocturne", "Paper", "Briefing"];
+    let tiles = ["ClawDeck", "Harbor", "Ember", "Meadow", "Nocturne", "Paper", "Briefing"];
     for label in tiles {
         let r = h.get_by_label(label).rect();
         assert!(r.right() <= 1000.0 - 36.0, "{label} ends at {}, inside the 36pt right margin", r.right());
@@ -654,7 +654,7 @@ fn a_file_that_cant_be_opened_says_why() {
     }
     h.run_steps(2);
     assert!(h.state().session.documents().is_empty());
-    assert!(h.query_by_label_contains("not a presentation DeckCraft can read").is_some(), "the error is on screen");
+    assert!(h.query_by_label_contains("not a presentation ClawDeck can read").is_some(), "the error is on screen");
     let _ = std::fs::remove_dir_all(&dir);
 }
 
@@ -777,7 +777,7 @@ fn about_has_product_links_and_credits_without_account_controls() {
     assert_eq!(page(&h), Some(Page::About));
     assert!(h.query_by_label("User Information").is_none());
     assert!(h.query_by_label("Source on GitHub").is_some());
-    assert!(h.query_by_label("Join our community on Discord").is_some());
+    assert!(h.query_by_label("Join the Clawku community").is_some());
     assert!(h.query_all_by_label("Appearance").next().is_some());
     click_on_page(&h, "Credits");
     h.run_steps(3);

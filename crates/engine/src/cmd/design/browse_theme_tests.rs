@@ -137,10 +137,10 @@ fn effect_scheme_replaces_format_and_keeps_colours_and_fonts() {
     let mut s = crate::Session::with_new();
     let listed = s.execute("design.themes", &json!({})).unwrap();
     let names: Vec<String> = listed["effectSchemes"].as_array().unwrap().iter().filter_map(|v| v.as_str().map(str::to_string)).collect();
-    assert_eq!(names, ["DeckCraft", "Soft", "Crisp", "Lift", "Glow", "Plain"]);
+    assert_eq!(names, ["ClawDeck", "Soft", "Crisp", "Lift", "Glow", "Plain"]);
 
     let n = undo_len(&s);
-    s.execute("design.effects", &json!({"name": "DeckCraft"})).unwrap();
+    s.execute("design.effects", &json!({"name": "ClawDeck"})).unwrap();
     assert_eq!(undo_len(&s), n, "the scheme already on the theme is not an undo step");
     let err = s.execute("design.effects", &json!({"name": "Office"})).unwrap_err().to_string();
     assert!(err.contains("no effect scheme"), "{err}");

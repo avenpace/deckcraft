@@ -78,7 +78,7 @@ fn colors_dialog_apply_and_reject() {
     match &s.ui_requests[0] {
         UiRequest::Dialog { id, params } => {
             assert_eq!(id, "themeColors");
-            assert_eq!(params["name"], "DeckCraft");
+            assert_eq!(params["name"], "ClawDeck");
             let colors = params["colors"].as_object().unwrap();
             assert_eq!(colors.len(), 12);
             assert_eq!(colors["accent1"].as_str().unwrap(), format!("#{}", original.get(SchemeSlot::Accent1).hex()));

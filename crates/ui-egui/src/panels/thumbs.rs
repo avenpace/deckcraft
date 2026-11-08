@@ -87,10 +87,18 @@ pub fn show(app: &mut SlideApp, ui: &mut Ui) {
     if app.session.active().is_some_and(|d| d.selection.target.is_page_master()) {
         return;
     }
+    // Phones: a slim strip of thumbnails, so the slide itself has the screen (Clawku)
+    let screen_w = ui.ctx().content_rect().width();
+    let narrow = screen_w < 600.0;
+    let (default_w, range) = if narrow {
+        (app.ui.thumbs_width.min(screen_w * 0.26), 64.0..=(screen_w * 0.4).max(80.0))
+    } else {
+        (app.ui.thumbs_width, 150.0..=420.0)
+    };
     let panel = egui::Panel::left("thumbs")
         .resizable(true)
-        .default_size(app.ui.thumbs_width)
-        .size_range(150.0..=420.0)
+        .default_size(default_w)
+        .size_range(range)
         .frame(egui::Frame::NONE.fill(t.chrome))
         .show(ui, |ui| {
             app.ui.thumbs_width = ui.available_width();

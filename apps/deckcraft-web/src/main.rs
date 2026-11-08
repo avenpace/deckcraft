@@ -5,7 +5,8 @@
 //! from this directory (output in `dist/web`).
 //!
 //! Differences from the desktop app:
-//! - no TCP control channel (browsers can't listen on sockets);
+//! - no TCP control channel (browsers can't listen on sockets); `?control` gives the page
+//!   `window.deckcraft`, the same JSON methods as promises (crate::api), instead;
 //! - File → Open and Insert → Pictures/Audio/Video use the browser file picker; bytes arrive
 //!   asynchronously through `Services::inbox`, applied to the document, slide and operation
 //!   that started the pick (a dismissed picker or a closed document drops the file);
@@ -14,13 +15,16 @@
 //! - preferences are not persisted.
 //!
 //! URL query flags: `?webgl` forces the WebGL2 backend instead of WebGPU; `?blank` starts with an
-//! empty presentation instead of the sample deck; `?show` starts the slide show.
+//! empty presentation instead of the sample deck; `?show` starts the slide show; `?control`
+//! installs `window.deckcraft`, the page's command API (crate::api), only when the page asks.
 //! `?host=parent` (inside an `<iframe>`) talks to a same-origin parent page instead: it sends the
 //! presentation to open and stores what DeckCraft saves (`host`), and `&author=` names the user
 //! for comments.
 #![deny(clippy::unwrap_used, clippy::expect_used, clippy::panic, clippy::unimplemented, clippy::todo, clippy::unreachable)]
 #![forbid(unsafe_code)]
 
+#[cfg(target_arch = "wasm32")]
+mod api;
 #[cfg(target_arch = "wasm32")]
 mod clawku_pick;
 #[cfg(target_arch = "wasm32")]

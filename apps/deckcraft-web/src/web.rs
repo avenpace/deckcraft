@@ -1,7 +1,7 @@
 //! The browser shell: web `Services`, drag-and-drop, and the eframe web runner.
 
 use deckcraft_engine::Session;
-use deckcraft_ui_egui::{Inbox, InboxEvent, InboxFile, Services, SlideApp};
+use deckcraft_ui_egui::{ControlRequest, Inbox, InboxEvent, InboxFile, Services, SlideApp};
 use wasm_bindgen::JsCast as _;
 
 const PRESENTATION_EXTS: &[&str] = &["deckcraft", "pptx", "potx", "ppsx", "txt", "md"];
@@ -79,7 +79,21 @@ pub fn start() {
                     {
                         crate::host::Bridge::set_author(&mut app, &author);
                     }
-                    Ok(Box::new(WebShell { app, inbox, bridge: app_bridge }))
+                    // `?control`: `window.deckcraft`, the page's command API (crate::api), opt-in.
+                    // The requests it queues are handed to the app's control channel every pass
+                    // below, as the desktop control server's would arrive on it.
+                    let control_tx = if query_has("control") {
+                        let (tx, rx) = std::sync::mpsc::channel();
+                        app = app.with_control(rx);
+                        crate::api::connect(cc.egui_ctx.clone());
+                        if let Err(e) = crate::api::install() {
+                            log::error!("couldn't install window.deckcraft: {e:?}");
+                        }
+                        Some(tx)
+                    } else {
+                        None
+                    };
+                    Ok(Box::new(WebShell { app, inbox, bridge: app_bridge, control_tx }))
                 }),
             )
             .await;
@@ -120,14 +134,25 @@ struct WebShell {
     inbox: Inbox,
     /// The parent page that keeps the files (`?host=parent`).
     bridge: Option<crate::host::Bridge>,
+    /// Sends the page's `window.deckcraft` requests (crate::api) into the app's control channel;
+    /// only with `?control`.
+    control_tx: Option<std::sync::mpsc::Sender<ControlRequest>>,
 }
 
 impl eframe::App for WebShell {
     /// Delegate one eframe logic pass to the wrapped application, opening the files the parent
-    /// page sent first and telling it about unsaved changes after.
+    /// page sent and handing the page's control requests to the app's control channel first, and
+    /// telling it about unsaved changes after.
     fn logic(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         if let Some(bridge) = &self.bridge {
             bridge.open_files(&mut self.app);
+        }
+        // The page's `window.deckcraft` requests (crate::api) join the app's control channel,
+        // which this pass drains (`SlideApp::logic`).
+        if let Some(tx) = &self.control_tx {
+            for request in crate::api::take_requests() {
+                let _ = tx.send(request);
+            }
         }
         self.app.logic(ctx);
         if let Some(bridge) = &self.bridge {

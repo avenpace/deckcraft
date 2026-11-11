@@ -511,6 +511,13 @@ impl SlideApp {
         }
     }
 
+    /// The format Save As keeps by default: the presentation's own (a `.pptx` stays a `.pptx`),
+    /// `.deckcraft` for one with no file yet.
+    pub fn own_format(&self) -> &'static str {
+        let pptx = self.session.active().and_then(|d| d.path.as_deref()).is_some_and(|p| p.to_ascii_lowercase().ends_with(".pptx"));
+        if pptx { "pptx" } else { "deckcraft" }
+    }
+
     pub fn save_as_dialog(&mut self, format: &str) {
         let name = self.session.active().map(|d| d.title()).unwrap_or_else(|| "Presentation".into());
         let ext = if format == "pptx" { "pptx" } else { "deckcraft" };
@@ -660,7 +667,7 @@ impl SlideApp {
                 UiRequest::Message { text } => self.set_status(text),
                 UiRequest::PickFile { purpose } => {
                     if purpose == "saveAs" {
-                        self.save_as_dialog("deckcraft");
+                        self.save_as_dialog(self.own_format());
                     }
                 }
                 UiRequest::Media { action, shape, ms } => {

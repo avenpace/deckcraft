@@ -128,6 +128,16 @@ fn hosted_save_save_as_and_copies() {
     assert_eq!(app.session.active().unwrap().path.as_deref(), Some("deck.pptx"));
 }
 
+/// Save As from the command or the File menu keeps a .pptx a .pptx: Clawku gets the
+/// presentation's own name (and asks for the new one), never a `.deckcraft` it can't store.
+#[test]
+fn hosted_save_as_keeps_the_presentations_format() {
+    let (mut app, log) = app(true);
+    app.session.execute("slide.new", &json!({})).unwrap();
+    app.run("app.saveAsDialog", json!({})).unwrap();
+    assert_eq!(*log.saved.borrow(), [("deck.pptx".to_string(), true)]);
+}
+
 /// Print opens the browser's print dialog: nothing is stored in Clawku.
 #[test]
 fn hosted_print_prints_instead_of_storing_a_pdf() {

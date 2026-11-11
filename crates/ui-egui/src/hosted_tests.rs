@@ -79,10 +79,10 @@ fn hosted_file_tab_shows_only_the_one_presentation() {
     h.state_mut().run("app.backstage", json!({})).unwrap();
     h.run_steps(3);
     assert_eq!(h.state().backstage.as_ref().map(|b| b.page), Some(Page::Info), "Home gives way to Info");
-    for gone in ["Home", "New", "Close"] {
+    for gone in ["Home", "New", "Close", "About"] {
         assert!(!in_nav(&h, gone), "{gone} is Clawku's");
     }
-    for kept in ["Open", "Info", "Save", "Save As", "Print", "Export", "About", "Options"] {
+    for kept in ["Open", "Info", "Save", "Save As", "Print", "Export", "Options"] {
         assert!(in_nav(&h, kept), "{kept} stays");
     }
     assert!(h.query_by_label("Copy path").is_none());
@@ -173,7 +173,7 @@ fn hosted_new_and_close_are_hidden_and_their_keys_do_nothing() {
     h.run_steps(2);
     assert_eq!(h.state().session.documents().len(), 1, "no new presentation");
     assert!(h.state().dialog.is_none() && h.state().session.active().is_some(), "nothing closed");
-    for id in ["file.new", "app.closePresentation", "file.close", "app.home", "view.newWindow", "app.checkUpdates", "file.revert"] {
+    for id in ["file.new", "app.closePresentation", "file.close", "app.home", "view.newWindow", "app.checkUpdates", "file.revert", "app.about"] {
         assert!(h.state().command_hidden(id), "{id}");
     }
     assert!(!h.state().command_hidden("file.save"));

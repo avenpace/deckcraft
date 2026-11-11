@@ -163,7 +163,7 @@ pub const UI_COMMANDS: &[(&str, &str, Option<&str>, &str)] = &[
 /// Commands Clawku owns when it hosts the app ([`Services::hosted`]): making, closing or
 /// switching presentations, the File tab's Home, a second window, recovery and Revert (there is
 /// no file on disk to go back to), Reuse Slides (it needs the desktop's file picker), updates and
-/// the community links. The command palette and the Quick Access Toolbar leave them out, and their
+/// the community links and About (help is Clawku's). The command palette and the Quick Access Toolbar leave them out, and their
 /// shortcuts do nothing.
 pub const HOSTED_HIDDEN: &[&str] = &[
     "file.new",
@@ -180,6 +180,7 @@ pub const HOSTED_HIDDEN: &[&str] = &[
     "app.reuseSlidesDialog",
     "app.checkUpdates",
     "app.links",
+    "app.about",
 ];
 
 /// Commands that in the browser only say they need the desktop app (the browser's picker would

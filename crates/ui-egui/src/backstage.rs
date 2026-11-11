@@ -148,14 +148,16 @@ pub fn entries(has_doc: bool, hosted: bool) -> (Vec<Nav>, Vec<Nav>) {
             top.push(Nav::Close);
         }
     }
-    (top, vec![Nav::Page(Page::About), Nav::Options])
+    // Hosted: no About either; help is Clawku's
+    let bottom = if hosted { vec![Nav::Options] } else { vec![Nav::Page(Page::About), Nav::Options] };
+    (top, bottom)
 }
 
 /// The page the File tab shows for `page`. Hosted, Home and New (new presentations, templates,
-/// the recent list) aren't there: Info stands in, or Open with nothing open.
+/// the recent list) and About aren't there: Info stands in, or Open with nothing open.
 pub fn landing(page: Page, hosted: bool, has_doc: bool) -> Page {
     match page {
-        Page::Home | Page::New if hosted => {
+        Page::Home | Page::New | Page::About if hosted => {
             if has_doc {
                 Page::Info
             } else {

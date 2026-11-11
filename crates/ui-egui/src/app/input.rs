@@ -202,6 +202,11 @@ impl SlideApp {
     /// delivered exactly once in the next real UI pass. `ViewportInfo::visible()` is not a phase
     /// signal: a hidden root still gets a full pass for a screenshot or `RequestPaintWhileHidden`.
     pub fn raw_input_hook(&mut self, ctx: &egui::Context, raw: &mut egui::RawInput) {
+        // Fingers: a drag scrolls, a tap clicks, a long press then a drag moves (`finger`). Read
+        // before the control channel's input joins below: that is a mouse's and passes as it is.
+        if raw.viewport_id == egui::ViewportId::ROOT {
+            self.filter_fingers(ctx, raw);
+        }
         #[cfg(not(target_arch = "wasm32"))]
         for f in std::mem::take(&mut raw.dropped_files) {
             let name = f.path().file_name().map(|n| n.to_string_lossy().to_string()).unwrap_or_else(|| "dropped file".into());

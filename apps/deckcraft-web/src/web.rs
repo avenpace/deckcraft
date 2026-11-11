@@ -75,6 +75,10 @@ pub fn start() {
                         }
                     }
                     let mut app = SlideApp::new(Session::new(), services);
+                    // A phone or tablet: its first press is already a finger's (a drag scrolls).
+                    if coarse_pointer() {
+                        app.expect_touch();
+                    }
                     // In host mode the parent sends the presentation to edit; no sample meanwhile.
                     if app_bridge.is_some() {
                         if let Err(e) = app.start_for_host() {
@@ -127,6 +131,11 @@ pub fn start() {
             }
         }
     });
+}
+
+/// The device's main pointer is a finger (`(pointer: coarse)`): a phone or a tablet.
+fn coarse_pointer() -> bool {
+    web_sys::window().and_then(|w| w.match_media("(pointer: coarse)").ok().flatten()).is_some_and(|m| m.matches())
 }
 
 fn query() -> String {

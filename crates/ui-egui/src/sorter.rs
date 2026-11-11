@@ -278,7 +278,7 @@ pub fn show(app: &mut SlideApp, ui: &mut Ui) {
     let multi = st.selection.slides.clone();
     let zoom = app.ui.sorter_zoom.clamp(0.5, 3.0);
     let grouped = groups(&doc);
-    egui::ScrollArea::vertical().auto_shrink([false, false]).show(ui, |ui| {
+    let scrolled = egui::ScrollArea::vertical().auto_shrink([false, false]).show(ui, |ui| {
         ui.add_space(12.0);
         ui.horizontal(|ui| {
             ui.add_space(24.0);
@@ -356,6 +356,9 @@ pub fn show(app: &mut SlideApp, ui: &mut Ui) {
             app.ui.sorter_zoom = (zoom * zd).clamp(0.5, 3.0);
         }
     });
+    // A finger dragged over the slides scrolls them; a tap selects, and a long press then a drag
+    // reorders (`crate::finger`). Two fingers pinch-zoom the grid (the zoom above).
+    crate::finger::scroll_here(ui.ctx(), ui.layer_id(), scrolled.inner_rect);
 }
 
 /// Notes Page: the slide on top and its notes underneath, on a page.

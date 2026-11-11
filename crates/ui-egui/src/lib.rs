@@ -50,6 +50,8 @@ pub use control::{ControlRequest, ControlResponse};
 
 mod app;
 mod clock;
+pub(crate) mod finger;
+mod fling;
 mod ime_hooks;
 pub mod panels;
 mod services;
@@ -358,6 +360,8 @@ pub struct SlideApp {
     recent_checked: HashMap<String, bool>,
     /// A trackpad twist is in progress (one undo step when it ends).
     twisting: bool,
+    /// The finger gesture in progress on a touch screen (`finger.rs`).
+    pub(crate) fingers: finger::Fingers,
     /// Next cancellation identity for a browser pick or a dropped file.
     next_file_id: u64,
     /// Picks and drops whose bytes have not arrived yet.
@@ -505,6 +509,8 @@ mod slide_size_tests;
 mod split_button_tests;
 #[cfg(test)]
 mod texture_limit_tests;
+#[cfg(test)]
+mod touch_tests;
 #[cfg(test)]
 mod ui_soak_tests;
 #[cfg(test)]

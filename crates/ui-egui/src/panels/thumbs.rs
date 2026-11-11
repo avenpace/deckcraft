@@ -113,6 +113,9 @@ pub fn show(app: &mut SlideApp, ui: &mut Ui) {
             });
             // Where the pane is scrolled to, for the control channel and tests (#917).
             app.ui.thumbs_scroll = out.state.clamped_offset().y;
+            // A finger dragged over the thumbnails scrolls them; a tap selects a slide, and a long
+            // press then a drag reorders (`crate::finger`).
+            crate::finger::scroll_here(ui.ctx(), ui.layer_id(), out.inner_rect);
         });
     // Focus follows the last press: inside the pane keeps it, anywhere else (canvas, ribbon) drops it.
     if let Some(pos) = ui.input(|i| if i.pointer.primary_pressed() { i.pointer.interact_pos() } else { None }) {

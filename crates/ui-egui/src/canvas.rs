@@ -111,6 +111,46 @@ fn wheel_navigation(app: &mut SlideApp, ui: &mut Ui, carry_id: egui::Id, doc_uid
     }
 }
 
+/// Travel (points) along a finger swipe that turns the slide when the slide fits the view.
+const SWIPE_TURN: f32 = 48.0;
+
+/// A finger swiped over a slide that fits the view (nothing to scroll): one slide on per swipe,
+/// left or up for the next, as the trackpad's flick turns them. Its glide adds to the swipe but
+/// never turns another.
+fn finger_swipe(app: &mut SlideApp, ui: &Ui, scroll: u64) {
+    let id = ui.scope_id().with("finger_swipe");
+    let (at, travel, turned): (u64, egui::Vec2, bool) = ui.data_mut(|d| d.get_temp(id).unwrap_or_default());
+    let (mut travel, mut turned) = if at == scroll { (travel, turned) } else { (egui::Vec2::ZERO, false) };
+    let moved = ui.input(|i| trackpad_scroll(&i.events));
+    if moved.is_finite() {
+        travel += moved;
+    }
+    let along = if travel.x.abs() > travel.y.abs() { travel.x } else { travel.y };
+    if !turned && along.abs() >= SWIPE_TURN {
+        turned = true;
+        let _ = app.run(if along < 0.0 { "slide.next" } else { "slide.previous" }, json!({}));
+    }
+    ui.data_mut(|d| d.insert_temp(id, (scroll, travel, turned)));
+}
+
+/// A finger dragged anywhere over the slide view (the rulers and the pasteboard around the
+/// slide too, not its scroll bars) scrolls it; a tap selects, and a long press then a drag moves
+/// or resizes, as a mouse drag does (`crate::finger`). Not with a drawing tool, which one finger
+/// draws with.
+fn finger_scrolls_canvas(app: &SlideApp, ui: &Ui, avail: Rect, inset: f32, overflow: egui::Vec2, offset: egui::Vec2) {
+    if !matches!(app.session.tool.kind, ToolKind::Select) {
+        return;
+    }
+    let mut area = avail;
+    if scroll_bar(avail, inset, overflow, offset, 0).is_some() {
+        area.max.y -= scroll::SCROLL_BAR;
+    }
+    if scroll_bar(avail, inset, overflow, offset, 1).is_some() {
+        area.max.x -= scroll::SCROLL_BAR;
+    }
+    crate::finger::scroll_here(ui.ctx(), ui.layer_id(), area);
+}
+
 fn empty_deck_prompt(app: &mut SlideApp, ui: &mut Ui, avail: Rect, t: &Tokens) {
     let resp = ui.allocate_rect(avail, Sense::click());
     ui.painter().text(avail.center(), Align2::CENTER_CENTER, "Click to add first slide", theme::font(22.0), t.text_dim);
@@ -168,7 +208,10 @@ pub fn show(app: &mut SlideApp, ui: &mut Ui) {
     let mut offset: egui::Vec2 = ui.data_mut(|d| d.get_temp(scroll_id).unwrap_or_default());
     let last: Option<(Rect, f32)> = ui.data_mut(|d| d.get_temp(last_id));
     let resp = ui.allocate_rect(avail, Sense::click_and_drag());
-    let (wheel, zoom_delta, hover) = ui.input(|i| (i.smooth_scroll_delta, i.zoom_delta(), i.pointer.hover_pos()));
+    // Two fingers zoom about the point between them (`crate::finger`), the mouse wheel and a
+    // touchpad pinch about the pointer.
+    let pinch = ui.input(|i| i.multi_touch().map(|t| t.center_pos).filter(|p| p.is_finite()));
+    let (wheel, zoom_delta, hover) = ui.input(|i| (i.smooth_scroll_delta, i.zoom_delta(), pinch.or(i.pointer.hover_pos())));
     let zooming = resp.hovered() && (zoom_delta - 1.0).abs() > 1e-3;
     if zooming {
         let cur = app.ui.zoom.unwrap_or_else(|| layout(app, avail).1);
@@ -223,13 +266,18 @@ pub fn show(app: &mut SlideApp, ui: &mut Ui) {
             }
         }
     }
-    if (resp.hovered() || on_bar) && !zooming {
+    // Two fingers pan while they pinch; they never turn slides.
+    let pinching = app.fingers.pinching();
+    if (resp.hovered() || on_bar) && (!zooming || pinching) {
         if overflow != egui::Vec2::ZERO {
             offset -= wheel;
-        } else {
+        } else if let Some(scroll) = app.fingers.scrolling() {
+            finger_swipe(app, ui, scroll);
+        } else if !pinching {
             wheel_navigation(app, ui, carry_id, doc_uid);
         }
     }
+    finger_scrolls_canvas(app, ui, avail, inset, overflow, offset);
     offset.x = offset.x.clamp(0.0, overflow.x);
     offset.y = offset.y.clamp(0.0, overflow.y);
     // On the physical pixel grid, so the slide texture is one texel per device pixel (#184). The

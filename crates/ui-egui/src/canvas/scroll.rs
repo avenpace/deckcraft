@@ -1,7 +1,7 @@
 use super::{Rect, pos2};
 
 /// Thickness of the canvas scroll bars, in points.
-const SCROLL_BAR: f32 = 10.0;
+pub(super) const SCROLL_BAR: f32 = 10.0;
 
 /// The canvas scroll bar along `axis` (0 across, 1 down): its track, its thumb for `offset`, and
 /// how far the thumb can travel. `None` when the slide fits that way. `inset` keeps the rulers'

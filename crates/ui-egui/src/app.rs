@@ -104,6 +104,7 @@ impl SlideApp {
             v_seen: false,
             recent_checked: HashMap::new(),
             twisting: false,
+            fingers: Default::default(),
             next_file_id: 1,
             pending_files: Vec::new(),
             host_start: None,

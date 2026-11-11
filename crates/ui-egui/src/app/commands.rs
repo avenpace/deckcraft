@@ -216,7 +216,7 @@ impl SlideApp {
                     return Err(format!("File › {} needs an open presentation", page.label()));
                 }
                 self.open_backstage(page);
-                return Ok(json!({"page": page.id()}));
+                return Ok(json!({"page": self.backstage.as_ref().map_or(page, |b| b.page).id()}));
             }
             "app.closePresentation" => self.close_presentation(),
             "app.print" => {

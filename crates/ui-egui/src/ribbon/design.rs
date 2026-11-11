@@ -28,7 +28,10 @@ pub(super) fn design(app: &mut SlideApp, ui: &mut Ui) {
         {
             run(app, "design.theme", json!({"name": n}));
         }
-        if small_button(ui, Icon::Themes, "Browse for Themes…", enabled(app, "design.browseTheme"), false).clicked() {
+        // In the browser Browse for Themes only says it needs the desktop app.
+        if !app.command_hidden("app.browseThemeDialog")
+            && small_button(ui, Icon::Themes, "Browse for Themes…", enabled(app, "design.browseTheme"), false).clicked()
+        {
             run(app, "app.browseThemeDialog", json!({}));
         }
     });

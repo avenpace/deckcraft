@@ -77,6 +77,17 @@ pub fn title_bar(app: &mut SlideApp, ui: &mut Ui) {
             let from = app.session.active().map(|d| d.selection.slide).unwrap_or(0);
             app.start_show(from, false);
         }
+        // Hosted, Share is Clawku's: it shares the presentation with people (`deckcraft:share`).
+        if app.services.share.is_some() {
+            let r = right.add(
+                egui::Button::new(egui::RichText::new("Share").font(theme::bold(13.0)))
+                    .corner_radius(control_h / 2.0)
+                    .min_size(vec2(64.0, control_h)),
+            );
+            if r.on_hover_text("Share this presentation").clicked() {
+                app.share();
+            }
+        }
         if icon_toggle(&mut right, Icon::CommentsBubble, "Comments", has_doc, app.ui.pane.as_deref() == Some("comments")).clicked() {
             let _ = app.run("view.pane", json!({"pane": "comments", "toggle": true}));
         }

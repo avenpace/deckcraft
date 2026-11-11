@@ -25,7 +25,10 @@
 //!   - Save As (File › Save As as .pptx or .deckcraft, Ctrl+Shift+S): `true`. The presentation is
 //!     now that file; the next Save sends its name with `false`.
 //!   - Export (PDF, pictures, outline, GIF, handouts, a Save As type that isn't a presentation)
-//!     and Print: `false`. They are copies; the presentation's file stays the same.
+//!     and Print: `false`. They are copies; the presentation's file stays the same. Framed by
+//!     Clawku (`&open=host`, `crate::clawku_pick`), a copy never carries the presentation's own
+//!     name (`deck (copy).pptx`), and Print opens the browser's print dialog instead.
+//! - `deckcraft:share` (to the host, Clawku only): the user asked to share the presentation.
 //! - `deckcraft:dirty` whenever unsaved changes appear or go away, `deckcraft:failed` when the
 //!   app couldn't start or refused a file of 2 GiB or larger.
 //!

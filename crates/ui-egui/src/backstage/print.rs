@@ -85,6 +85,8 @@ pub(super) fn print(app: &mut SlideApp, ui: &mut Ui, bs: &mut Backstage) {
                 ui,
                 if app.services.pick_save.is_some() {
                     "ClawDeck prints through a PDF: it opens in your PDF viewer, where you choose the printer."
+                } else if app.services.print.is_some() {
+                    "ClawDeck prints through a PDF: your browser's print dialog opens, where you choose the printer."
                 } else {
                     "ClawDeck prints through a PDF: it downloads, ready to print from your browser or PDF viewer."
                 },

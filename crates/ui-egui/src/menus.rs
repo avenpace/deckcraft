@@ -49,6 +49,8 @@ pub fn ui_shortcut(app: &mut SlideApp, key: egui::Key, m: Mods) -> bool {
             app.open_backstage(crate::backstage::Page::Print);
             return true;
         }
+        // Hosted, Clawku makes and closes presentations: Ctrl+N and Ctrl+W do nothing.
+        (N | W, true, false, false) if app.hosted() => return true,
         (W, true, false, false) => {
             app.close_presentation();
             return true;
@@ -98,7 +100,8 @@ pub fn ui_shortcut(app: &mut SlideApp, key: egui::Key, m: Mods) -> bool {
 
 /// The palette's entries for the lowercase query `q`. An engine command is hidden when a UI command has the same label: Open…, Save As…,
 /// Export… and Audio/Video from File… need a `path` the palette can't give, so the one entry left opens the dialog instead of failing.
-fn palette_items(session: &deckcraft_engine::Session, q: &str) -> Vec<(String, String, Option<&'static str>)> {
+/// Commands `hidden` names are left out ([`SlideApp::command_hidden`]: New and Close when Clawku hosts the app).
+fn palette_items(session: &deckcraft_engine::Session, q: &str, hidden: &dyn Fn(&str) -> bool) -> Vec<(String, String, Option<&'static str>)> {
     let mut items: Vec<(String, String, Option<&'static str>)> = session
         .commands()
         .into_iter()
@@ -106,6 +109,7 @@ fn palette_items(session: &deckcraft_engine::Session, q: &str) -> Vec<(String, S
         .filter(|c| c.enabled && !crate::UI_COMMANDS.iter().any(|u| u.1 == c.label) && !deckcraft_engine::cmd::needs_arguments(c.params))
         .map(|c| (c.id.to_string(), c.label.to_string(), c.shortcut))
         .chain(crate::UI_COMMANDS.iter().filter(|c| !deckcraft_engine::cmd::needs_arguments(c.3)).map(|c| (c.0.to_string(), c.1.to_string(), c.2)))
+        .filter(|(id, _, _)| !hidden(id))
         .filter(|(id, label, _)| q.is_empty() || label.to_lowercase().contains(q) || id.to_lowercase().contains(q))
         .collect();
     items.sort_by_key(|(_, l, _)| !l.to_lowercase().starts_with(q));
@@ -127,7 +131,7 @@ pub fn palette(app: &mut SlideApp, ctx: &egui::Context) {
             let r = ui.add(egui::TextEdit::singleline(&mut query).hint_text("Search commands…").desired_width(f32::INFINITY).font(theme::font(15.0)));
             r.request_focus();
             let q = query.to_lowercase();
-            let items = palette_items(&app.session, &q);
+            let items = palette_items(&app.session, &q, &|id| app.command_hidden(id));
             let (down, up, enter, esc) = ui.input(|i| {
                 (
                     i.key_pressed(egui::Key::ArrowDown),
@@ -320,7 +324,7 @@ mod tests {
     fn palette_has_one_export_entry_that_opens_the_dialog() {
         let session = deckcraft_engine::Session::with_new();
         for query in ["exp", "export"] {
-            let exports: Vec<_> = palette_items(&session, query).into_iter().filter(|(_, label, _)| label == "Export…").collect();
+            let exports: Vec<_> = palette_items(&session, query, &|_| false).into_iter().filter(|(_, label, _)| label == "Export…").collect();
             assert_eq!(exports.len(), 1, "query {query}");
             assert_eq!(exports[0].0, "app.exportDialog");
         }
@@ -330,7 +334,7 @@ mod tests {
             if deckcraft_engine::cmd::needs_arguments(params) {
                 continue;
             }
-            let same: Vec<_> = palette_items(&session, &label.to_lowercase()).into_iter().filter(|(_, l, _)| l == label).collect();
+            let same: Vec<_> = palette_items(&session, &label.to_lowercase(), &|_| false).into_iter().filter(|(_, l, _)| l == label).collect();
             assert_eq!(same.len(), 1, "{label}");
             assert_eq!(same[0].0, *id, "{label}");
         }

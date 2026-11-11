@@ -138,13 +138,32 @@ impl Nav {
 }
 
 /// The side menu, top group then bottom group, in keyboard order. PowerPoint's Share (cloud) is
-/// left out; with nothing open only Home, New and Open stay at the top.
-pub fn entries(has_doc: bool) -> (Vec<Nav>, Vec<Nav>) {
-    let mut top = vec![Nav::Page(Page::Home), Nav::Page(Page::New), Nav::Page(Page::Open)];
+/// left out; with nothing open only Home, New and Open stay at the top. Hosted by Clawku, which
+/// makes, lists and closes presentations itself, Home, New and Close are left out too.
+pub fn entries(has_doc: bool, hosted: bool) -> (Vec<Nav>, Vec<Nav>) {
+    let mut top = if hosted { vec![Nav::Page(Page::Open)] } else { vec![Nav::Page(Page::Home), Nav::Page(Page::New), Nav::Page(Page::Open)] };
     if has_doc {
-        top.extend([Nav::Page(Page::Info), Nav::Save, Nav::Page(Page::SaveAs), Nav::Page(Page::Print), Nav::Page(Page::Export), Nav::Close]);
+        top.extend([Nav::Page(Page::Info), Nav::Save, Nav::Page(Page::SaveAs), Nav::Page(Page::Print), Nav::Page(Page::Export)]);
+        if !hosted {
+            top.push(Nav::Close);
+        }
     }
     (top, vec![Nav::Page(Page::About), Nav::Options])
+}
+
+/// The page the File tab shows for `page`. Hosted, Home and New (new presentations, templates,
+/// the recent list) aren't there: Info stands in, or Open with nothing open.
+pub fn landing(page: Page, hosted: bool, has_doc: bool) -> Page {
+    match page {
+        Page::Home | Page::New if hosted => {
+            if has_doc {
+                Page::Info
+            } else {
+                Page::Open
+            }
+        }
+        page => page,
+    }
 }
 
 /// Print page: which slides.
@@ -279,7 +298,7 @@ pub fn key(app: &mut SlideApp, key: Key, mods: deckcraft_engine::Mods) -> bool {
         return false;
     }
     let has_doc = app.session.active().is_some();
-    let (top, bottom) = entries(has_doc);
+    let (top, bottom) = entries(has_doc, app.hosted());
     let all: Vec<Nav> = top.into_iter().chain(bottom).collect();
     let Some(bs) = app.backstage.as_mut() else { return false };
     match key {
@@ -323,12 +342,16 @@ pub fn show(app: &mut SlideApp, ui: &mut Ui) {
     let Some(mut bs) = app.backstage.take() else { return };
     let t = Tokens::get(ui.ctx());
     let has_doc = app.session.active().is_some();
+    let hosted = app.hosted();
     if !has_doc && bs.page.needs_doc() {
         bs.page = Page::Home;
     }
+    bs.page = landing(bs.page, hosted, has_doc);
     let (nav_bg, page_bg) = colours(&t);
     let mut out = Outcome::default();
-    let (top, bottom) = entries(has_doc);
+    let (top, bottom) = entries(has_doc, hosted);
+    // The separator under the pages that open a presentation (Home, New, Open; only Open hosted).
+    let split = if hosted { 1 } else { 3 };
     egui::Panel::left("backstage_nav").exact_size(NAV_W).resizable(false).frame(egui::Frame::NONE.fill(nav_bg)).show(ui, |ui| {
         ui.spacing_mut().item_spacing.y = 0.0;
         if has_doc {
@@ -353,7 +376,7 @@ pub fn show(app: &mut SlideApp, ui: &mut Ui) {
         }
         let mut index = 0;
         for (k, nav) in top.iter().enumerate() {
-            if k == 3 {
+            if k == split {
                 separator(ui, &t);
             }
             if nav_item(ui, *nav, &bs, index, &t).clicked() {
@@ -423,7 +446,7 @@ pub fn show(app: &mut SlideApp, ui: &mut Ui) {
         });
     });
     if let Some(page) = out.page {
-        bs.go(page);
+        bs.go(landing(page, hosted, app.session.active().is_some()));
     }
     // A command run from a page may have closed the view itself (a new presentation); keep that.
     if out.close && has_doc {

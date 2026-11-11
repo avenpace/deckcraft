@@ -251,8 +251,11 @@ pub(super) fn home(app: &mut SlideApp, ui: &mut Ui, bs: &mut Backstage, out: &mu
             }
         });
     }
-    ui.add_space(30.0);
-    ui.hyperlink_to("Join the Clawku community", deckcraft_engine::links::DISCORD);
+    // Hosted, the community link is the standalone app's (and Home isn't shown at all).
+    if !app.hosted() {
+        ui.add_space(30.0);
+        ui.hyperlink_to("Join the Clawku community", deckcraft_engine::links::DISCORD);
+    }
 }
 
 /// New: a blank presentation, then every theme and starter template, with a search box.
@@ -283,8 +286,15 @@ pub(super) fn new_page(app: &mut SlideApp, ui: &mut Ui, bs: &mut Backstage) {
 }
 
 /// Open: Recent and Browse on the left; the recent presentations (with a search box) on the right.
+/// Hosted, Clawku keeps the files: Browse alone, which asks Clawku for one.
 pub(super) fn open_page(app: &mut SlideApp, ui: &mut Ui, bs: &mut Backstage) {
     let t = Tokens::get(ui.ctx());
+    if app.hosted() {
+        if place_row(ui, Icon::OpenFolder, "Browse", false, 220.0).on_hover_text("Open a presentation from Clawku (Ctrl+O)").clicked() {
+            let _ = app.run("app.openDialog", json!({}));
+        }
+        return;
+    }
     ui.horizontal_top(|ui| {
         ui.vertical(|ui| {
             ui.set_width(230.0);

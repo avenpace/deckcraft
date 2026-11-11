@@ -57,6 +57,22 @@ pub fn start() {
                     let mut services = services(inbox.clone(), cc.egui_ctx.clone());
                     if let Some(bridge) = &app_bridge {
                         bridge.connect(&mut services, cc.egui_ctx.clone());
+                        // Clawku (`?host=parent&open=host`): it owns New, Open, Close, Share and
+                        // the user's name, so the app shows only the presentation it sent; Share
+                        // asks it, and Print opens the browser's print dialog instead of storing a PDF.
+                        if crate::clawku_pick::hosted() {
+                            services.hosted = true;
+                            services.share = Some(Box::new(|| {
+                                if !crate::clawku_pick::host_share("deckcraft") {
+                                    log::error!("couldn't ask the page to share the presentation");
+                                }
+                            }));
+                            services.print = Some(Box::new(|name: &str, bytes: &[u8]| {
+                                if let Err(e) = print_pdf(bytes) {
+                                    log::error!("couldn't print {name}: {e}");
+                                }
+                            }));
+                        }
                     }
                     let mut app = SlideApp::new(Session::new(), services);
                     // In host mode the parent sends the presentation to edit; no sample meanwhile.
@@ -277,6 +293,67 @@ fn download(path: &str, bytes: &[u8]) -> Result<(), String> {
     });
     window.set_timeout_with_callback_and_timeout_and_arguments_0(revoke.unchecked_ref(), 10_000).map_err(js)?;
     Ok(())
+}
+
+/// Opens `bytes` (a PDF) as an object URL in a hidden iframe and calls the iframe's own `print()`
+/// once it has loaded: the browser's print dialog on the PDF, without a download or a popup the
+/// browser might block. The URL and the iframe go once the dialog closes, so prints don't leak.
+fn print_pdf(bytes: &[u8]) -> Result<(), String> {
+    let js = |e: wasm_bindgen::JsValue| format!("{e:?}");
+    let window = web_sys::window().ok_or("no window")?;
+    let document = window.document().ok_or("no document")?;
+    let iframe: web_sys::HtmlIFrameElement = document.create_element("iframe").map_err(js)?.dyn_into().map_err(|_| "not an iframe")?;
+    // Off-screen rather than `display: none`, which some browsers won't print from.
+    for (k, v) in [("position", "fixed"), ("right", "0"), ("bottom", "0"), ("width", "0"), ("height", "0"), ("border", "0")] {
+        iframe.style().set_property(k, v).map_err(js)?;
+    }
+    let body = document.body().ok_or("no body")?;
+    let parts = js_sys::Array::of1(&js_sys::Uint8Array::from(bytes));
+    let opts = web_sys::BlobPropertyBag::new();
+    opts.set_type("application/pdf");
+    let blob = web_sys::Blob::new_with_u8_array_sequence_and_options(&parts, &opts).map_err(js)?;
+    let url = web_sys::Url::create_object_url_with_blob(&blob).map_err(js)?;
+    if let Err(e) = body.append_child(&iframe) {
+        cleanup_print(&iframe, &url);
+        return Err(js(e));
+    }
+    // Listen before setting `src`, so a fast load can't fire first.
+    let loaded = iframe.clone();
+    let loaded_url = url.clone();
+    let on_load = wasm_bindgen::closure::Closure::once_into_js(move || {
+        loaded.set_onload(None);
+        if let Err(e) = print_loaded(&loaded, &loaded_url) {
+            cleanup_print(&loaded, &loaded_url);
+            log::error!("print failed: {e:?}");
+        }
+    });
+    iframe.set_onload(Some(on_load.unchecked_ref()));
+    iframe.set_src(&url);
+    Ok(())
+}
+
+/// The print dialog on the loaded iframe; the iframe and its URL go when it closes.
+fn print_loaded(iframe: &web_sys::HtmlIFrameElement, url: &str) -> Result<(), wasm_bindgen::JsValue> {
+    let win = iframe.content_window().ok_or_else(|| wasm_bindgen::JsValue::from_str("no print window"))?;
+    let (done_iframe, done_url) = (iframe.clone(), url.to_owned());
+    let after = wasm_bindgen::closure::Closure::once(move || cleanup_print(&done_iframe, &done_url));
+    // Listen before `print()`, which can fire `afterprint` before it returns; once, so the
+    // callback is released when the dialog closes.
+    let options = web_sys::AddEventListenerOptions::new();
+    options.set_once(true);
+    let callback = after.as_ref().unchecked_ref();
+    win.add_event_listener_with_callback_and_add_event_listener_options("afterprint", callback, &options)?;
+    if let Err(e) = win.print() {
+        let _ = win.remove_event_listener_with_callback("afterprint", callback);
+        return Err(e);
+    }
+    let _ = after.into_js_value();
+    Ok(())
+}
+
+fn cleanup_print(iframe: &web_sys::HtmlIFrameElement, url: &str) {
+    web_sys::Url::revoke_object_url(url).ok();
+    iframe.remove();
 }
 
 fn mime_for(name: &str) -> &'static str {

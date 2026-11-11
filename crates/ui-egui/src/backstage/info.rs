@@ -35,11 +35,15 @@ pub(super) fn info(app: &mut SlideApp, ui: &mut Ui, bs: &mut Backstage) {
     let title = v.get("title").and_then(Value::as_str).unwrap_or("").to_string();
     let dirty = v.get("dirty").and_then(Value::as_bool).unwrap_or(false);
     ui.label(RichText::new(&title).font(theme::font(24.0)).color(t.accent));
+    // Hosted, the file lives in Clawku: no path to show or copy, and no saved file on disk for
+    // Revert to go back to.
+    let hosted = app.hosted();
     match &path {
+        _ if hosted => {}
         Some(p) => dim(ui, p),
         None => dim(ui, "Not saved yet"),
     }
-    if let Some(p) = &path {
+    if let Some(p) = path.as_ref().filter(|_| !hosted) {
         ui.add_space(8.0);
         ui.horizontal(|ui| {
             if ui.button("Copy path").clicked() {
@@ -73,7 +77,7 @@ pub(super) fn info(app: &mut SlideApp, ui: &mut Ui, bs: &mut Backstage) {
                 (true, true) => ("This presentation has unsaved changes. Revert goes back to the saved file.", true),
                 (true, false) => ("This presentation has never been saved.", false),
             };
-            if task(ui, Icon::ResetSlide, "Revert", "Manage Presentation", detail, can_revert) {
+            if !hosted && task(ui, Icon::ResetSlide, "Revert", "Manage Presentation", detail, can_revert) {
                 let _ = app.run("file.revert", json!({}));
             }
         });
@@ -111,7 +115,9 @@ pub(super) fn info(app: &mut SlideApp, ui: &mut Ui, bs: &mut Backstage) {
                     }
                     ui.end_row();
                 }
-                row(ui, "Location", path.clone().unwrap_or_else(|| "Not saved yet".into()));
+                if !hosted {
+                    row(ui, "Location", path.clone().unwrap_or_else(|| "Not saved yet".into()));
+                }
             });
         });
     });
@@ -173,6 +179,8 @@ pub(super) fn save_as(app: &mut SlideApp, ui: &mut Ui, bs: &mut Backstage, out: 
         if save
             .on_hover_text(if web {
                 "Download the file"
+            } else if app.hosted() {
+                "Save to Clawku"
             } else if app.services.host_save.is_some() {
                 "Save to the page"
             } else {
@@ -222,8 +230,11 @@ pub(super) fn about(app: &mut SlideApp, ui: &mut Ui) {
             if task(ui, Icon::Help, "Credits", "Credits", "The people and models who built ClawDeck.", true) {
                 let _ = app.run("app.about", json!({}));
             }
-            ui.hyperlink_to("Join the Clawku community", deckcraft_engine::links::DISCORD);
-            ui.hyperlink_to("Source on GitHub", deckcraft_engine::links::GITHUB);
+            // Hosted, the community and GitHub links are the standalone app's.
+            if !app.hosted() {
+                ui.hyperlink_to("Join the Clawku community", deckcraft_engine::links::DISCORD);
+                ui.hyperlink_to("Source on GitHub", deckcraft_engine::links::GITHUB);
+            }
         });
         ui.add_space(40.0);
         ui.vertical(|ui| {

@@ -103,6 +103,9 @@ fn run(app: &mut SlideApp, q: &QatItem) {
 
 /// Whether a Quick Access Toolbar item can be run right now.
 pub fn is_enabled(app: &SlideApp, id: &str) -> bool {
+    if app.command_hidden(id) {
+        return false;
+    }
     match id {
         "app.home" => true,
         "file.save" | "show.fromStart" | "review.spelling" | "app.find" => app.session.active().is_some(),
@@ -134,9 +137,12 @@ fn tip(q: &QatItem, index: usize, mac: bool) -> String {
 
 /// Draw the toolbar and its Customize menu into a left-to-right row of the title bar.
 pub fn show(app: &mut SlideApp, ui: &mut Ui) {
-    let items = app.ui.qat.clone();
+    // Hosted, New and Home are Clawku's: their buttons are left out ([`SlideApp::command_hidden`]).
+    // The others keep their position, which Alt+1…9 counts.
+    let items: Vec<(usize, QatItem)> = app.ui.qat.iter().cloned().enumerate().filter(|(_, q)| !app.command_hidden(&q.id)).collect();
     let mac = app.session.mac_keys;
-    for (i, q) in items.iter().enumerate() {
+    for (i, q) in &items {
+        let (i, q) = (*i, q);
         let on = q.id == "app.home" && app.backstage_open();
         let en = is_enabled(app, &q.id);
         let r = crate::widgets::icon_toggle(ui, q.icon(), &tip(q, i, mac), en, on);
@@ -153,14 +159,16 @@ pub fn show(app: &mut SlideApp, ui: &mut Ui) {
     let r = crate::widgets::icon_toggle(ui, Icon::ChevronDown, "Customize Quick Access Toolbar", true, false);
     egui::Popup::menu(&r).show(|ui| {
         ui.label(egui::RichText::new("Customize Quick Access Toolbar").strong());
-        for c in common() {
+        let offered: Vec<QatItem> = common().into_iter().filter(|c| !app.command_hidden(&c.id)).collect();
+        for c in offered {
             let mut on = app.ui.qat.iter().any(|q| q.same(&c.id, &Value::Null));
             if ui.checkbox(&mut on, &c.label).changed() {
                 let key = if on { "add" } else { "remove" };
                 let _ = command(app, &json!({key: c.id}));
             }
         }
-        let extra: Vec<QatItem> = app.ui.qat.iter().filter(|q| !common().iter().any(|c| q.same(&c.id, &Value::Null))).cloned().collect();
+        let extra: Vec<QatItem> =
+            app.ui.qat.iter().filter(|q| !common().iter().any(|c| q.same(&c.id, &Value::Null)) && !app.command_hidden(&q.id)).cloned().collect();
         if !extra.is_empty() {
             ui.separator();
             for q in extra {

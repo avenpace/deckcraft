@@ -164,6 +164,36 @@ impl SlideApp {
         self.recent_checked.remove(path);
     }
 
+    /// Framed by Clawku ([`Services::hosted`](crate::Services::hosted)): one presentation, the
+    /// one Clawku sent, and Clawku's own New, Open, Close, Share and sign-in.
+    pub fn hosted(&self) -> bool {
+        self.services.hosted
+    }
+
+    /// Whether the buttons that only work with the desktop's file picker are hidden: always in
+    /// the browser (they would only say they need the desktop app), and whenever hosted.
+    pub fn desktop_only_hidden(&self) -> bool {
+        cfg!(target_arch = "wasm32") || self.services.hosted
+    }
+
+    /// Whether the command `id` is left out of the command palette, the Quick Access Toolbar and
+    /// the ribbon here ([`crate::HOSTED_HIDDEN`], [`crate::DESKTOP_ONLY`]).
+    pub fn command_hidden(&self, id: &str) -> bool {
+        (self.services.hosted && crate::HOSTED_HIDDEN.contains(&id)) || (self.desktop_only_hidden() && crate::DESKTOP_ONLY.contains(&id))
+    }
+
+    /// Share: the host shares the presentation with people (`deckcraft:share`); false when there
+    /// is no host to ask.
+    pub fn share(&mut self) -> bool {
+        match self.services.share.as_mut() {
+            Some(share) => {
+                share();
+                true
+            }
+            None => false,
+        }
+    }
+
     /// File › Close and Ctrl+W: closes the active presentation, asking first when it has unsaved
     /// changes (Save, Don't Save, Cancel), as PowerPoint does.
     pub fn close_presentation(&mut self) {
@@ -240,9 +270,10 @@ impl SlideApp {
     /// Hands `bytes` to the browser as a download (web); false (with the reason in the status
     /// bar) when there are no bytes or no way to download.
     fn download(&mut self, name: &str, bytes: deckcraft_engine::Result<Vec<u8>>) -> bool {
+        let name = self.copy_name(name);
         match (bytes, self.services.download.as_mut()) {
             (Ok(b), Some(dl)) => {
-                dl(name, &b);
+                dl(&name, &b);
                 true
             }
             (Err(e), _) => {
@@ -256,12 +287,45 @@ impl SlideApp {
         }
     }
 
+    /// Hosted, a copy (an export) goes to Clawku as a new file beside the presentation, so it
+    /// must not carry the presentation's own name: Clawku would overwrite the presentation with it
+    /// (Export › Change File Type › PowerPoint of `deck.pptx`). That name becomes
+    /// `deck (copy).pptx`; any other name, and every name when not hosted, stays as it is.
+    fn copy_name(&self, name: &str) -> String {
+        let own = self
+            .session
+            .active()
+            .and_then(|d| d.path.as_deref())
+            .and_then(|p| std::path::Path::new(p).file_name())
+            .map(|n| n.to_string_lossy().to_string());
+        match own {
+            Some(own) if self.services.hosted && own.eq_ignore_ascii_case(name) => match name.rsplit_once('.') {
+                Some((stem, ext)) => format!("{stem} (copy).{ext}"),
+                None => format!("{name} (copy)"),
+            },
+            _ => name.to_string(),
+        }
+    }
+
     /// File › Print: DeckCraft prints through a PDF. On the desktop the PDF (with the Print page's
     /// layout, slides and options) is written to the temporary folder and opened in the system's
-    /// PDF viewer, which has the printers; on the web it downloads.
+    /// PDF viewer, which has the printers; on the web it downloads, and hosted by Clawku
+    /// ([`Services::print`](crate::Services::print)) it goes to the browser's print dialog.
     pub fn print_pdf(&mut self, params: Value) -> bool {
         let Some((title, doc)) = self.session.active().map(|d| (d.title(), d.doc.clone())) else { return false };
         let mut params = if params.is_object() { params } else { json!({}) };
+        if let Some(print) = self.services.print.as_mut() {
+            return match deckcraft_engine::cmd::file::pdf_bytes(&doc, &params) {
+                Ok(bytes) => {
+                    print(&format!("{title}.pdf"), &bytes);
+                    true
+                }
+                Err(e) => {
+                    self.set_status(e.to_string());
+                    false
+                }
+            };
+        }
         if self.services.pick_save.is_none() {
             // Web: the browser hands the PDF to the user.
             let bytes = deckcraft_engine::cmd::file::pdf_bytes(&doc, &params);

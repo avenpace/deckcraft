@@ -70,9 +70,12 @@ pub(super) fn record(app: &mut SlideApp, ui: &mut Ui) {
             }
         }
     });
-    group(ui, |ui| {
-        if big_button(ui, Icon::Help, "Learn\nMore", true).clicked() {
-            app.open_url(deckcraft_engine::links::APP_PAGE);
-        }
-    });
+    // Hosted, Learn More would leave for the standalone app's page; Clawku has its own help.
+    if !app.hosted() {
+        group(ui, |ui| {
+            if big_button(ui, Icon::Help, "Learn\nMore", true).clicked() {
+                app.open_url(deckcraft_engine::links::APP_PAGE);
+            }
+        });
+    }
 }

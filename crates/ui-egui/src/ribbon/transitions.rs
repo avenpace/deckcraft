@@ -97,13 +97,16 @@ pub(super) fn transitions(app: &mut SlideApp, ui: &mut Ui) {
                             run(app, "transition.sound", json!({"builtin": id, "loop": lp}));
                         }
                     }
-                    ui.separator();
                     let can_pick = app.services.pick_open.is_some();
-                    let r = ui.add_enabled(can_pick, egui::Button::new("Other Sound…"));
-                    if r.clicked() {
-                        app.pick_transition_sound();
+                    // Hosted, a button that only says it needs the desktop app is left out.
+                    if can_pick || !app.hosted() {
+                        ui.separator();
+                        let r = ui.add_enabled(can_pick, egui::Button::new("Other Sound…"));
+                        if r.clicked() {
+                            app.pick_transition_sound();
+                        }
+                        r.on_disabled_hover_text("Choosing a sound file needs the desktop app");
                     }
-                    r.on_disabled_hover_text("Choosing a sound file needs the desktop app");
                     ui.separator();
                     let has = cur.as_ref().is_some_and(|t| t.sound.is_some());
                     let mut lp = cur.as_ref().is_some_and(|t| t.sound_loop);

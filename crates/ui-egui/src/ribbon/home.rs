@@ -131,7 +131,13 @@ fn new_slide_menu(app: &mut SlideApp, ui: &mut Ui) {
         app.dialog = Some(crate::dialogs::Dialog::new("outline"));
     }
     let desktop = app.services.pick_open.is_some();
-    for (label, keep) in [("Reuse Slides…", false), ("Reuse Slides (Keep Source Formatting)…", true)] {
+    // Hosted, Reuse Slides would only say it needs the desktop app: left out.
+    let reuse: &[(&str, bool)] = if app.command_hidden("app.reuseSlidesDialog") {
+        &[]
+    } else {
+        &[("Reuse Slides…", false), ("Reuse Slides (Keep Source Formatting)…", true)]
+    };
+    for &(label, keep) in reuse {
         let r = ui.add_enabled(desktop, egui::Button::new(label));
         if r.clicked() {
             run(app, "app.reuseSlidesDialog", json!({"keepFormatting": keep}));

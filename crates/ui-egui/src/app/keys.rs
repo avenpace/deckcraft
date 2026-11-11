@@ -39,6 +39,7 @@ impl SlideApp {
                 // Engine shortcuts that don't touch the hidden slide (Ctrl+N).
                 if mods.cmd
                     && matches!(key, egui::Key::N)
+                    && !self.hosted()
                     && let Err(e) = self.session.key(key_name(key), mods)
                 {
                     self.set_status(e.to_string());

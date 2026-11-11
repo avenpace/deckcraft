@@ -932,6 +932,15 @@ fn dlg_spelling(app: &mut SlideApp, ui: &mut Ui, d: &mut Dialog) -> bool {
         _ if available => {
             ui.label(egui::RichText::new(format!("Dictionary: {}", info.get("lang").and_then(Value::as_str).unwrap_or(""))).small().weak())
         }
+        // Hosted, there is no dictionaries folder to put one in.
+        _ if app.hosted() => ui.label(
+            egui::RichText::new(format!(
+                "No {} dictionary is installed, so only common misspellings are found.",
+                info.get("lang").and_then(Value::as_str).unwrap_or("en-US")
+            ))
+            .small()
+            .weak(),
+        ),
         _ => ui.label(
             egui::RichText::new(format!(
                 "No {} dictionary is installed, so only common misspellings are found. Put a Hunspell .aff/.dic pair in {}.",
@@ -1282,7 +1291,7 @@ fn dlg_about(app: &mut SlideApp, ui: &mut Ui, d: &mut Dialog) -> bool {
     ui.separator();
     match tab.as_str() {
         "contributors" | "models" => {
-            credits_block(ui, tab == "models");
+            credits_block(ui, tab == "models", !app.hosted());
         }
         _ => about(app, ui),
     }
@@ -1385,12 +1394,15 @@ fn dlg_preferences(app: &mut SlideApp, ui: &mut Ui, d: &mut Dialog) -> bool {
     if d.id != "preferences" {
         return false;
     }
-    ui.horizontal(|ui| {
-        let label = ui.label("Your name (comments):");
-        // Name the field for assistive technology; a bare text edit next to a label is an
-        // unnamed input in egui 0.37's accessibility tree.
-        let _ = ui.add(egui::TextEdit::singleline(&mut app.session.prefs.author)).labelled_by(label.id);
-    });
+    // Hosted, the name comes from Clawku (`?author=`), which signs the user in.
+    if !app.hosted() {
+        ui.horizontal(|ui| {
+            let label = ui.label("Your name (comments):");
+            // Name the field for assistive technology; a bare text edit next to a label is an
+            // unnamed input in egui 0.37's accessibility tree.
+            let _ = ui.add(egui::TextEdit::singleline(&mut app.session.prefs.author)).labelled_by(label.id);
+        });
+    }
     let (ok, cancel) = buttons(ui, "Done");
     if cancel {
         restore_preferences(app, d);

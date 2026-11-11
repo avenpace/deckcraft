@@ -56,9 +56,12 @@ pub(super) fn slide_master(app: &mut SlideApp, ui: &mut Ui) {
                     run(app, "design.theme", json!({"name": th.name}));
                 }
             }
-            ui.separator();
-            if ui.button("Browse for Themes…").clicked() {
-                run(app, "app.browseThemeDialog", json!({}));
+            // In the browser Browse for Themes only says it needs the desktop app.
+            if !app.command_hidden("app.browseThemeDialog") {
+                ui.separator();
+                if ui.button("Browse for Themes…").clicked() {
+                    run(app, "app.browseThemeDialog", json!({}));
+                }
             }
         });
         big(app, ui, Icon::FormatBackground, "Background\nStyles", "view.pane", json!({"pane": "background"}));

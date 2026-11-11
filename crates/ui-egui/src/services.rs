@@ -62,6 +62,16 @@ pub struct Services {
     /// presentation is then that file, and the next Save goes to it. Exports and Print still go
     /// through `download`, which the host also points at the page: they are copies.
     pub host_save: Option<HostSaveFn>,
+    /// Web, framed by Clawku (`?host=parent&open=host`): the host owns the file list, New, Open,
+    /// Close, Share and the user's name, and the app shows only the presentation it sent. The UI
+    /// hides every way to make or show another presentation (Home, New, Close, Recent, New
+    /// Window), the standalone extras (community and GitHub links, Check for Updates, the name
+    /// field) and the buttons that only say they need the desktop app. False everywhere else.
+    pub hosted: bool,
+    /// Hosted: Share asks the host to share the presentation (`deckcraft:share`).
+    pub share: Option<Box<dyn FnMut()>>,
+    /// Hosted: Print hands this PDF to the browser's own print dialog instead of storing it.
+    pub print: Option<DownloadFn>,
     pub inbox: Option<Inbox>,
     /// Image on the system clipboard (PNG bytes), when the host can read one.
     pub clipboard_image: Option<Box<dyn FnMut() -> Option<Vec<u8>>>>,

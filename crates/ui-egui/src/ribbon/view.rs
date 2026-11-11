@@ -76,14 +76,17 @@ pub(super) fn view(app: &mut SlideApp, ui: &mut Ui) {
             app.ui.zoom = None;
         }
     });
-    group(ui, |ui| {
-        let has = app.session.active().is_some();
-        let on = app.doc_window.is_some();
-        let resp = big_button_ex(ui, Icon::NewWindow, "New\nWindow", has, false, on).0;
-        if resp.on_hover_text("Open another window on this presentation").clicked() {
-            let _ = app.run("view.newWindow", json!({}));
-        }
-    });
+    // Hosted, the presentation has one window, Clawku's.
+    if !app.command_hidden("view.newWindow") {
+        group(ui, |ui| {
+            let has = app.session.active().is_some();
+            let on = app.doc_window.is_some();
+            let resp = big_button_ex(ui, Icon::NewWindow, "New\nWindow", has, false, on).0;
+            if resp.on_hover_text("Open another window on this presentation").clicked() {
+                let _ = app.run("view.newWindow", json!({}));
+            }
+        });
+    }
     group(ui, |ui| {
         let gs = app.ui.grayscale;
         if big_button_ex(ui, Icon::Grayscale, "Grayscale", true, false, gs).0.clicked() {

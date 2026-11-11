@@ -6,16 +6,17 @@ pub(super) const CREDITS_SIZE: egui::Vec2 = vec2(820.0, 380.0);
 /// The Contributors / Models body in a block of its own fixed size, below the tab row. Sizing the
 /// dialog's `ui` instead (`set_min_size` / `set_max_height`) squeezed the tab row and the first
 /// credits row together, so the text was garbled and the tabs stopped answering (#843).
-pub(super) fn credits_block(ui: &mut Ui, models: bool) -> Rect {
+/// `links` makes the contributors' names links to their GitHub profiles (not when hosted).
+pub(super) fn credits_block(ui: &mut Ui, models: bool, links: bool) -> Rect {
     ui.allocate_ui(CREDITS_SIZE, |ui| {
         ui.set_min_size(CREDITS_SIZE);
-        if models { crate::credits::models_ui(ui) } else { crate::credits::contributors_ui(ui) }
+        if models { crate::credits::models_ui(ui) } else { crate::credits::contributors_ui(ui, links) }
     })
     .response
     .rect
 }
 
-pub fn about(_app: &mut SlideApp, ui: &mut Ui) {
+pub fn about(app: &mut SlideApp, ui: &mut Ui) {
     let t = Tokens::get(ui.ctx());
     ui.vertical_centered(|ui| {
         let (r, _) = ui.allocate_exact_size(vec2(64.0, 64.0), Sense::hover());
@@ -25,10 +26,13 @@ pub fn about(_app: &mut SlideApp, ui: &mut Ui) {
         ui.add_space(6.0);
         ui.label("Presentations and slide shows, rebuilt from scratch in pure Rust.");
         ui.label("An open-source, clean-room project. Not affiliated with Microsoft.");
-        ui.add_space(6.0);
-        ui.hyperlink_to("Join the Clawku community", deckcraft_engine::links::DISCORD);
-        ui.hyperlink_to("clawku.id", deckcraft_engine::links::APP_PAGE);
-        ui.hyperlink_to("Source on GitHub", deckcraft_engine::links::GITHUB);
+        // Hosted, these are the standalone app's links: About keeps the name and version only.
+        if !app.hosted() {
+            ui.add_space(6.0);
+            ui.hyperlink_to("Join the Clawku community", deckcraft_engine::links::DISCORD);
+            ui.hyperlink_to("clawku.id", deckcraft_engine::links::APP_PAGE);
+            ui.hyperlink_to("Source on GitHub", deckcraft_engine::links::GITHUB);
+        }
         ui.add_space(6.0);
         ui.label(egui::RichText::new("MIT OR Apache-2.0 · © 2026 ArtCraft Team and the ClawDeck contributors").size(11.0).color(t.text_faint));
     });
@@ -110,7 +114,7 @@ mod about_credits_tests {
             let mut whole = egui::Rect::NOTHING;
             let mut out = ctx.run_ui(egui::RawInput::default(), |ui| {
                 tabs = ui.label("About").rect;
-                block = credits_block(ui, models);
+                block = credits_block(ui, models, true);
                 whole = ui.min_rect();
             });
             out.textures_delta.clear();

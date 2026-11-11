@@ -210,8 +210,9 @@ impl Default for View {
     }
 }
 
-/// About ▸ Contributors: a name toggle, a sort, and the list as a grab bag or a table.
-pub fn contributors_ui(ui: &mut egui::Ui) {
+/// About ▸ Contributors: a name toggle, a sort, and the list as a grab bag or a table. With
+/// `links` each name links to the contributor's GitHub profile; without (hosted) it is plain text.
+pub fn contributors_ui(ui: &mut egui::Ui, links: bool) {
     let id = egui::Id::unique("credits_view");
     let mut v = ui.data_mut(|d| d.get_temp::<View>(id)).unwrap_or_default();
     ui.horizontal_wrapped(|ui| {
@@ -251,7 +252,7 @@ pub fn contributors_ui(ui: &mut egui::Ui) {
     } else if v.table {
         // The table scrolls vertically itself, under a fixed header; it only scrolls sideways
         // once its columns are dragged wider than the dialog.
-        egui::ScrollArea::horizontal().auto_shrink([false, false]).show(ui, |ui| table(ui, &list, &mut v));
+        egui::ScrollArea::horizontal().auto_shrink([false, false]).show(ui, |ui| table(ui, &list, &mut v, links));
     } else {
         egui::ScrollArea::vertical().auto_shrink([false, false]).show(ui, |ui| {
             ui.horizontal_wrapped(|ui| {
@@ -259,7 +260,11 @@ pub fn contributors_ui(ui: &mut egui::Ui) {
                     if i > 0 {
                         ui.label(RichText::new("·").weak());
                     }
-                    ui.hyperlink_to(c.name(v.names), format!("https://github.com/{}", c.login)).on_hover_text(c.summary());
+                    if links {
+                        ui.hyperlink_to(c.name(v.names), format!("https://github.com/{}", c.login)).on_hover_text(c.summary());
+                    } else {
+                        ui.label(c.name(v.names)).on_hover_text(c.summary());
+                    }
                 }
             });
         });
@@ -366,7 +371,7 @@ fn header_text(k: SortKey) -> RichText {
     RichText::new(k.label().1).strong()
 }
 
-fn table(ui: &mut egui::Ui, list: &[&Contributor], v: &mut View) {
+fn table(ui: &mut egui::Ui, list: &[&Contributor], v: &mut View, links: bool) {
     let h = row_height(ui);
     let rows: Vec<[String; 9]> = list.iter().map(|c| cells(c)).collect();
     let widths: Vec<f32> = SortKey::ALL
@@ -398,8 +403,14 @@ fn table(ui: &mut egui::Ui, list: &[&Contributor], v: &mut View) {
             for (c, cells) in list.iter().zip(rows) {
                 body.row(h, |mut row| {
                     row.col(|ui| {
-                        aligned(ui, false, |ui| ui.hyperlink_to(c.name(v.names), format!("https://github.com/{}", c.login)))
-                            .on_hover_text(c.summary());
+                        aligned(ui, false, |ui| {
+                            if links {
+                                ui.hyperlink_to(c.name(v.names), format!("https://github.com/{}", c.login))
+                            } else {
+                                ui.label(c.name(v.names))
+                            }
+                        })
+                        .on_hover_text(c.summary());
                     });
                     for text in cells {
                         row.col(|ui| {

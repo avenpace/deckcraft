@@ -172,6 +172,7 @@ impl SlideApp {
 
     /// Opens the File tab's view on `page` (keeping its state when it is already open).
     pub fn open_backstage(&mut self, page: backstage::Page) {
+        let page = backstage::landing(page, self.hosted(), self.session.active().is_some());
         let key = self.docs_key();
         match &mut self.backstage {
             Some(b) => b.go(page),

@@ -41,9 +41,11 @@ pub(super) fn smartart_design(app: &mut SlideApp, ui: &mut Ui) {
             }
         });
         let pictures = kind.starts_with("picture");
-        if small_button(ui, Icon::Picture, "Insert Picture", pictures && n > 0, false)
-            .on_hover_text("Put a picture in the selected node's picture placeholder")
-            .clicked()
+        // In the browser a SmartArt picture can't be picked yet: the button would only say so.
+        if !app.command_hidden("app.smartArtPictureDialog")
+            && small_button(ui, Icon::Picture, "Insert Picture", pictures && n > 0, false)
+                .on_hover_text("Put a picture in the selected node's picture placeholder")
+                .clicked()
         {
             run(app, "app.smartArtPictureDialog", json!({"id": gid, "index": at}));
         }
